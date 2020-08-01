@@ -1,11 +1,28 @@
 {
-  "name": "vtta-dndbeyond-ts",
+  "name": "vtta-dndbeyond",
   "version": "1.0.0",
-  "description": "VTTA D&D Beyond Integration",
+  "description": "Virtual Tabletop Assets - D&D Beyond Integration",
   "main": "src/index.js",
-  "author": "Sebastian Will <vttassets@gmail.com>",
+  "author": {
+    "name": "Sebastian Will",
+    "email": "vttassets@gmail.com",
+    "url": "https://www.vttassets.com"
+  },
+  "contributors": [
+    {
+      "name": "Jack",
+      "email": "jack@mrprimate.co.uk",
+      "url": "https://mrprimate.co.uk"
+    }
+  ],
+  "scripts": {
+    "test": "ts-node node_modules/jasmine/bin/jasmine",
+    "dev": "gulp dev",
+    "watch": "gulp watch",
+    "prod": "gulp build"
+  },
   "license": "MIT",
-  "private": true,
+  "private": false,
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^3.4.0",
     "@typescript-eslint/parser": "^3.4.0",
@@ -17,9 +34,14 @@
     "gulp-concat": "^2.6.1",
     "gulp-eslint": "^6.0.0",
     "gulp-sass": "^4.1.0",
+    "gulp-sourcemaps": "^2.6.5",
     "gulp-typescript": "^6.0.0-alpha.1",
+    "hard-source-webpack-plugin": "^0.13.1",
     "prettier": "^2.0.5",
+    "rimraf": "^3.0.2",
     "typescript": "^3.9.5"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@types/jquery": "^3.5.0"
+  }
 }

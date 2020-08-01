@@ -1,10 +1,12 @@
 const typescript = require("typescript");
 const path = require("path");
+const rimraf = require("rimraf");
 
 const gulp = require("gulp");
 
 const ts = require("gulp-typescript");
 const sass = require("gulp-sass");
+const sourcemaps = require("gulp-sourcemaps");
 const cleanCSS = require("gulp-clean-css");
 const autoprefixer = require("gulp-autoprefixer");
 const concat = require("gulp-concat");
@@ -69,8 +71,10 @@ function createTransformer() {
 }
 
 const tsConfig = ts.createProject("tsconfig.json", {
-  noImplicitAny: true,
-  declaration: true,
+  // noImplicitAny: true,
+  // declaration: true,
+  // allowJs: true,
+  allowSyntheticDefaultImports: true,
 
   getCustomTransformers: (_program) => ({
     after: [createTransformer()],
@@ -78,28 +82,55 @@ const tsConfig = ts.createProject("tsconfig.json", {
 });
 
 /**
+ * Cleaning the dist directory
+ */
+const clean = () => {
+  rimraf.sync(__dirname + "/dist/**/*");
+};
+
+/**
  * Linting
  */
-const lint = () => {
-  return gulp
-    .src(["**/*.ts", "!node_modules/**"])
+const lint = (cb) => {
+  gulp
+    .src(["src/**/*.ts"])
     .pipe(
       eslint({
-        //    configFile: __dirname + "/.eslintrc.json",
+        configFile: __dirname + "/.eslintrc.json",
       })
     )
-    .pipe(eslint.formatEach("visualstudio", process.stderr))
-    .pipe(eslint.failAfterError());
+    //.pipe(eslint.formatEach("visualstudio", process.stderr))
+    .pipe(eslint.format("visualstudio", process.stderr))
+    .pipe(eslint.failAfterError())
+    .on("error", function (e) {
+      console.error("\n" + e.message);
+    });
+  cb();
 };
 
 /**
  * Compiling
  */
-const compileScript = () => {
-  return gulp.src("src/**/*.ts").pipe(tsConfig()).pipe(gulp.dest("dist"));
+const compileJavaScript = () => {
+  return gulp.src("src/**/*.js").pipe(gulp.dest("dist"));
+};
+const compileTypeScript = () => {
+  return gulp
+    .src("src/**/*.ts")
+    .pipe(sourcemaps.init())
+    .pipe(tsConfig())
+    .pipe(sourcemaps.write("."))
+    .pipe(gulp.dest("dist"));
 };
 
-const compileStyle = () => {
+const compileScript = (cb) => {
+  clean();
+  compileJavaScript();
+  compileTypeScript();
+  cb();
+};
+
+const compileStyle = (cb) => {
   return gulp
     .src("src/**/*.sass")
     .pipe(sass().on("error", sass.logError))
@@ -110,23 +141,57 @@ const compileStyle = () => {
 };
 
 /**
+ * File/Folder processing
+ */
+const copyManifest = () => {
+  return gulp.src("./src/module.template.json").pipe(concat("module.json")).pipe(gulp.dest("./dist"));
+};
+
+const copyImages = (cb) => {
+  return gulp.src("./src/img/**/*").pipe(gulp.dest("./dist/img/"));
+  cb();
+};
+
+const copyLanguages = (cb) => {
+  gulp.src("./src/lang/**/*.json").pipe(gulp.dest("./dist/lang/"));
+  cb();
+};
+
+/**
  * Watching
  */
-const watchScript = () => {
-  gulp.watch("src/**/*.ts", { ignoreInitial: false }, compileScript);
+const watchTypeScript = (cb) => {
+  gulp.watch("src/**/*.ts", { ignoreInitial: false }, compileTypeScript);
 };
-const watchStyle = () => {
+const watchJavaScript = (cb) => {
+  gulp.watch("src/**/*.js", { ignoreInitial: false }, compileJavaScript);
+};
+
+const watchScript = (cb) => {
+  watchTypeScript();
+  watchJavaScript();
+  cb();
+};
+
+const watchStyle = (cb) => {
   gulp.watch("src/**/*.sass", { ignoreInitial: false }, compileStyle);
 };
+const watchManifest = (cb) => {
+  gulp.watch("src/module.template.json", copyManifest);
+};
+const watchImages = (cb) => {
+  gulp.watch("src/lang/*.json", { ignoreInitial: false }, copyImages);
+};
+const watchLanguages = (cb) => {
+  gulp.watch("./src/lang/**/*.json", { ignoreInitial: false }, copyLanguages);
+};
 
-const compile = gulp.parallel(compileScript, compileStyle);
+const compile = gulp.parallel(compileScript, compileStyle, copyManifest, copyImages, copyLanguages);
 compile.description = "compile all sources";
 
-const watch = gulp.parallel(watchScript, watchStyle);
+const watch = gulp.series(compile, gulp.parallel(watchScript, watchStyle, watchManifest, watchImages, watchLanguages));
 watch.description = "watch for changes to all source";
 
-const build = gulp.series(lint, compile);
-build.description = "lint and compile";
-
 gulp.task("watch", watch);
-gulp.task("build", build);
+gulp.task("build", compile);
+gulp.task("lint", lint);

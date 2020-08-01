@@ -1,9 +1,18 @@
-import Importer from "./import/index";
+import createFolderHierarchy from "./utility/folder/createFolderHierarchy";
+import { COLOR_DNDBEYOND_RED } from "./config";
 
-const message = "Hello World";
-// eslint-disable-next-line
-console.log(message);
+const createFolders = async () => {
+  let folder = await createFolderHierarchy({
+    names: ["Test", "My", "Folders"],
+    entityType: "Item",
+    color: COLOR_DNDBEYOND_RED,
+  });
 
-const importer = new Importer();
-// eslint-disable-next-line
-console.log(importer.getNumber());
+  console.log(folder); // eslint-disable-line no-console
+};
+
+Hooks.on("ready", () => {
+  createFolders();
+});
+
+CONFIG.debug.hooks = false;
